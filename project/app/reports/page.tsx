@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +10,8 @@ import * as XLSX from "xlsx"
 import ExcelJS from "exceljs"
 import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from "@/contexts/AuthContext"
-import Sidebar from "@/components/ui/sidebar"
+import { Sidebar, SidebarBody } from "@/components/ui/sidebar"
+import { Skeleton as UISkeleton } from "@/components/ui/skeleton"
 
 // Helper to get dimensions of an uploaded image
 const getImageDimensions = (file: File): Promise<{ width: number; height: number }> =>
@@ -104,14 +106,14 @@ export default function ReportDesigner() {
         const firstSheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[firstSheetName]
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-        setPreviewTable(jsonData)
+        setPreviewTable(jsonData as any[][])
       } else if (extension === "xlsx") {
         const arrayBuffer = await uploadedFile.arrayBuffer()
         const workbook = XLSX.read(arrayBuffer, { type: "array" })
         const firstSheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[firstSheetName]
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-        setPreviewTable(jsonData)
+        setPreviewTable(jsonData as any[][])
       } else {
         setPreviewTable([["Unsupported file type."]])
       }
@@ -262,10 +264,10 @@ export default function ReportDesigner() {
     if (logo) {
       const { width, height } = await getImageDimensions(logo)
       const arrayBuffer = await logo.arrayBuffer()
-      const buffer = new Uint8Array(arrayBuffer)
+      const buffer = Buffer.from(arrayBuffer)
       const ext = logo.name.split(".").pop()?.toLowerCase()
       const imageId = workbook.addImage({
-        buffer,
+        buffer: buffer,
         extension: ext === "png" ? "png" : "jpeg",
       })
       worksheet.addImage(imageId, {
@@ -295,7 +297,7 @@ export default function ReportDesigner() {
         ref: `A${currentRow}`,
         headerRow: true,
         style: {
-          theme: tableTheme,
+          theme: tableTheme as "TableStyleMedium2",
           showRowStripes: true,
         },
         columns: headerRowData.map((col, i) => ({
@@ -364,25 +366,25 @@ export default function ReportDesigner() {
       <div className="max-w-6xl mx-auto space-y-6 py-6">
         {/* Header skeleton */}
         <div className="flex justify-between items-center">
-          <div className="h-8 bg-gray-300 rounded w-1/3"></div>
-          <div className="h-8 bg-gray-300 rounded w-20"></div>
+          <UISkeleton className="h-8 w-1/3" />
+          <UISkeleton className="h-8 w-20" />
         </div>
         {/* File Upload Card skeleton */}
-        <div className="border-2 border-dashed rounded p-8 animate-pulse">
-          <div className="h-12 bg-gray-300 rounded w-12 mb-4"></div>
-          <div className="h-6 bg-gray-300 rounded w-1/2 mb-2"></div>
-          <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
+        <div className="border-2 border-dashed rounded p-8">
+          <UISkeleton className="h-12 w-12 mb-4" />
+          <UISkeleton className="h-6 w-1/2 mb-2" />
+          <UISkeleton className="h-4 w-full mb-2" />
         </div>
         {/* Branding Options skeleton */}
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="border rounded p-6 animate-pulse space-y-3">
-            <div className="h-6 bg-gray-300 rounded w-1/3"></div>
-            <div className="h-4 bg-gray-300 rounded w-full"></div>
-            <div className="h-4 bg-gray-300 rounded w-5/6"></div>
-            <div className="h-4 bg-gray-300 rounded w-2/3"></div>
+          <div className="border rounded p-6 space-y-3">
+            <UISkeleton className="h-6 w-1/3" />
+            <UISkeleton className="h-4 w-full" />
+            <UISkeleton className="h-4 w-5/6" />
+            <UISkeleton className="h-4 w-2/3" />
           </div>
-          <div className="border rounded p-6 animate-pulse">
-            <div className="h-10 bg-gray-300 rounded w-full"></div>
+          <div className="border rounded p-6">
+            <UISkeleton className="h-10 w-full" />
           </div>
         </div>
       </div>
@@ -591,68 +593,74 @@ export default function ReportDesigner() {
 
       {/* Templates Drawer */}
       {showTemplatesDrawer && (
-        <Sidebar 
-          isOpen={showTemplatesDrawer} 
-          onClose={() => setShowTemplatesDrawer(false)} 
-          title="Templates"
-        >
-          {/* Sidebar Header */}
-          <div className="mb-4 border-b border-gray-700 pb-2">
-            <p className="text-base text-gray-300 font-medium">
-              Create, update, or apply saved layouts
-            </p>
-          </div>
-          <div className="flex-1 overflow-auto space-y-3">
-            {templates.length === 0 ? (
-              <p className="text-sm text-gray-400">
-                No templates found. Create one below.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {templates.map((tmpl) => (
-                  <div
-                    key={tmpl.id}
-                    className={`flex items-center justify-between p-4 rounded-lg border ${
-                      tmpl.id === selectedTemplate
-                        ? "border-indigo-500 bg-indigo-700 text-white"
-                        : "border-gray-700 bg-gray-800 text-gray-200"
-                    }`}
-                  >
-                    <div className="text-base font-semibold">{tmpl.template_name}</div>
-                    <Button
-                      variant={tmpl.id === selectedTemplate ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleSelectTemplate(tmpl.id)}
-                    >
-                      {tmpl.id === selectedTemplate ? "Selected" : "Apply"}
-                    </Button>
+        <Sidebar open={showTemplatesDrawer} setOpen={setShowTemplatesDrawer}>
+          <SidebarBody className="justify-between gap-10">
+            <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+              <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200 mb-6">
+                Templates
+              </h2>
+              <div className="space-y-4">
+                {templates.length === 0 ? (
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    No templates found. Create one below.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {templates.map((tmpl) => (
+                      <div
+                        key={tmpl.id}
+                        className={cn(
+                          "p-4 rounded-lg transition-colors cursor-pointer",
+                          tmpl.id === selectedTemplate
+                            ? "bg-neutral-800 dark:bg-neutral-700 text-white"
+                            : "bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                        )}
+                        onClick={() => handleSelectTemplate(tmpl.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{tmpl.template_name}</span>
+                          <Check
+                            className={cn(
+                              "h-4 w-4 transition-opacity",
+                              tmpl.id === selectedTemplate
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-            {/* Divider separating template list and action sections */}
-            <div className="border-t border-gray-700 my-4"></div>
-            {selectedTemplate && (
-              <div className="p-4 bg-gray-900 rounded-lg border border-gray-700">
-                <Button variant="outline" className="w-full" onClick={handleUpdateTemplate}>
-                  Update Selected Template
-                </Button>
-              </div>
-            )}
-            <div className="p-4 bg-gray-900 rounded-lg border border-gray-700 mt-4 space-y-2">
-              <label className="block text-sm font-medium text-gray-200">
-                New Template Name
-              </label>
-              <Input
-                placeholder="e.g. My Custom Template"
-                value={newTemplateName}
-                onChange={(e) => setNewTemplateName(e.target.value)}
-              />
-              <Button variant="default" onClick={handleCreateTemplate}>
-                Save New Template
-              </Button>
             </div>
-          </div>
+
+            <div className="space-y-4 mt-6">
+              <div className="space-y-4">
+                {selectedTemplate && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleUpdateTemplate}
+                  >
+                    Update Selected Template
+                  </Button>
+                )}
+
+                <div className="space-y-2">
+                  <Input
+                    placeholder="New Template Name"
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                    className="bg-neutral-50 dark:bg-neutral-800"
+                  />
+                  <Button className="w-full" onClick={handleCreateTemplate}>
+                    Save New Template
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </SidebarBody>
         </Sidebar>
       )}
     </div>
