@@ -1,8 +1,14 @@
 "use client"
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
+import { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+
+interface User extends SupabaseUser {
+  displayName?: string
+  phoneNumber?: string
+  photoURL?: string
+}
 
 type AuthContextType = {
   user: User | null
@@ -10,6 +16,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  updateUserProfile: (profile: Partial<User>) => Promise<void>
   loading: boolean
 }
 
@@ -64,17 +71,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/')
   }
 
+  const updateUserProfile = async (profile: Partial<User>) => {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    setUser({ ...(user || {}), ...profile })
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, loading }}>
+    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, updateUserProfile, loading }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
+// Add custom hook to consume AuthContext
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
 }

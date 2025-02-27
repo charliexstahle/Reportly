@@ -31,10 +31,63 @@ interface PricingProps {
   description?: string;
 }
 
+// EXAMPLE plan array showing the relevant new feature on the Professional plan
+// and removing placeholders from the Enterprise plan.
+const samplePlans: PricingPlan[] = [
+  {
+    name: "Free",
+    price: "0",
+    yearlyPrice: "0",
+    period: "month",
+    features: [
+      "Basic script library",
+      "Version history",
+      "Community forum support",
+    ],
+    description: "Perfect for hobby projects or small experiments.",
+    buttonText: "Get Started",
+    href: "/start-free",
+    isPopular: false,
+  },
+  {
+    name: "Professional",
+    price: "10",
+    yearlyPrice: "8",
+    period: "month",
+    features: [
+      "Unlimited projects",
+      "Advanced analytics",
+      "Priority support",
+      "Access to beta features",
+      "Enhanced data visualizations", // <-- New relevant feature
+    ],
+    description: "For growing teams that need more power and flexibility.",
+    buttonText: "Get Started",
+    href: "/start-pro",
+    isPopular: true, // Middle plan is popular
+  },
+  {
+    name: "Enterprise",
+    price: "20",
+    yearlyPrice: "16",
+    period: "month",
+    features: [
+      "Custom integrations",
+      "Multi-team support",
+      "24/7 phone support",
+      // Removed "Dedicated account manager" and "Team analytics dashboard"
+    ],
+    description: "Best for large organizations with complex needs.",
+    buttonText: "Upgrade",
+    href: "/contact-sales",
+    isPopular: false,
+  },
+];
+
 export function Pricing({
-  plans,
-  title = "Simple, Transparent Pricing",
-  description = "Choose the plan that works for you\nAll plans include access to our platform, lead generation tools, and dedicated support.",
+  plans = samplePlans,
+  title = "SQL Script Management & Reporting",
+  description = "Advanced tool for script storage, version control, and dynamic report generation from CSV/XLSX inputs.",
 }: PricingProps) {
   const [isMonthly, setIsMonthly] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -70,141 +123,153 @@ export function Pricing({
   };
 
   return (
-    <div className="container mx-auto py-12">
-      <div className="text-center space-y-4 mb-8">
-        <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+    <div className="container mx-auto max-w-7xl px-4 py-4 overflow-hidden">
+      {/* Heading Section */}
+      <div className="text-center space-y-2 mb-4">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {title}
         </h2>
-        <p className="text-muted-foreground text-lg whitespace-pre-line">
+        <p className="text-muted-foreground text-base sm:text-lg leading-relaxed whitespace-pre-line">
           {description}
         </p>
       </div>
 
-      <div className="flex justify-center mb-10">
-        <label className="relative inline-flex items-center cursor-pointer">
-          <Label>
-            <Switch
-              ref={switchRef as any}
-              checked={!isMonthly}
-              onCheckedChange={handleToggle}
-              className="relative"
-            />
-          </Label>
-        </label>
-        <span className="ml-2 font-semibold">
-          Annual billing <span className="text-primary">(Save 20%)</span>
-        </span>
+      {/* Toggle Switch */}
+      <div className="flex justify-center items-center mb-8">
+        <Label className="mr-2 text-sm font-medium">
+          Pay Annually <span className="text-primary">(Save 20%)</span>
+        </Label>
+        <Switch
+          ref={switchRef as any}
+          checked={!isMonthly}
+          onCheckedChange={handleToggle}
+          className="relative"
+        />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {plans.map((plan, index) => (
+      {/* Pricing Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 items-end">
+        {plans.map((plan) => (
           <motion.div
-            key={index}
-            initial={{ y: 50, opacity: 1 }}
+            key={plan.name}
+            style={{
+              // Keep transform origin at bottom center so it expands upward
+              transformOrigin: "bottom center",
+            }}
+            initial={{ opacity: 0, y: 20, scale: 1 }}
             whileInView={
               isDesktop
                 ? {
-                    y: plan.isPopular ? -20 : 0,
                     opacity: 1,
-                    x: index === 2 ? -30 : index === 0 ? 30 : 0,
-                    scale: index === 0 || index === 2 ? 0.94 : 1.0,
+                    y: 0,
+                    scale: plan.isPopular ? 1.03 : 1, // Reduced scale from 1.05 to 1.03
                   }
-                : {}
+                : { opacity: 1, y: 0 }
             }
             viewport={{ once: true }}
             transition={{
-              duration: 1.6,
+              duration: 0.8,
               type: "spring",
               stiffness: 100,
               damping: 30,
-              delay: 0.4,
-              opacity: { duration: 0.5 },
             }}
             className={cn(
-              "rounded-2xl border-[1px] p-6 bg-background text-center lg:flex lg:flex-col lg:justify-center relative",
-              plan.isPopular ? "border-primary border-2" : "border-border",
-              "flex flex-col",
-              !plan.isPopular && "mt-5"
+              "relative overflow-hidden rounded-2xl border p-4 bg-background h-full flex flex-col",
+              plan.isPopular ? "border-primary border-2" : "border-border"
             )}
           >
+            {/* Popular Badge */}
             {plan.isPopular && (
-              <div className="absolute top-0 right-0 bg-primary py-0.5 px-2 rounded-bl-xl rounded-tr-xl flex items-center">
-                <Star className="text-primary-foreground h-4 w-4 fill-current" />
-                <span className="text-primary-foreground ml-1 font-sans font-semibold">
+              <div className="absolute top-0 right-0 flex items-center bg-primary py-1 px-2 rounded-bl-xl rounded-tr-xl shadow-md">
+                <Star className="h-4 w-4 text-primary-foreground" />
+                <span className="ml-1 text-sm font-semibold text-primary-foreground">
                   Popular
                 </span>
               </div>
             )}
-            <div className="flex-1 flex flex-col">
-              <p className="text-base font-semibold text-muted-foreground">
-                {plan.name}
-              </p>
-              <div className="mt-6 flex items-center justify-center gap-x-2">
-                <span className="text-5xl font-bold tracking-tight text-foreground">
-                  <NumberFlow
-                    value={
-                      isMonthly ? Number(plan.price) : Number(plan.yearlyPrice)
-                    }
-                    format={{
-                      style: "currency",
-                      currency: "USD",
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    }}
-                    formatter={(value) => `$${value}`}
-                    transformTiming={{
-                      duration: 500,
-                      easing: "ease-out",
-                    }}
-                    willChange
-                    className="font-variant-numeric: tabular-nums"
-                  />
-                </span>
-                {plan.period !== "Next 3 months" && (
-                  <span className="text-sm font-semibold leading-6 tracking-wide text-muted-foreground">
-                    / {plan.period}
+
+            <div className="flex flex-col flex-grow">
+              {/* Header */}
+              <div className="text-center">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {plan.name}
+                </p>
+                <div className="mt-4 flex items-center justify-center gap-x-1">
+                  <span className="text-4xl font-bold tracking-tight text-foreground">
+                    <NumberFlow
+                      value={
+                        isMonthly ? Number(plan.price) : Number(plan.yearlyPrice)
+                      }
+                      format={{
+                        style: "currency",
+                        currency: "USD",
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }}
+                      formatter={(value) => `$${value}`}
+                      transformTiming={{
+                        duration: 500,
+                        easing: "ease-out",
+                      }}
+                      willChange
+                      className="font-variant-numeric: tabular-nums"
+                    />
                   </span>
-                )}
+                  {plan.period !== "Next 3 months" && (
+                    <span className="text-xs font-semibold leading-6 tracking-wide text-muted-foreground">
+                      / {plan.period}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {isMonthly ? "billed monthly" : "billed annually"}
+                </p>
               </div>
 
-              <p className="text-xs leading-5 text-muted-foreground">
-                {isMonthly ? "billed monthly" : "billed annually"}
-              </p>
-
-              <ul className="mt-5 gap-2 flex flex-col">
+              {/* Features */}
+              <ul className="mt-4 space-y-2 text-sm">
                 {plan.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-left">{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              <hr className="w-full my-4" />
+              {/* Subtle Divider with increased padding */}
+              <hr className="my-6 border-border/30" />
 
-              {/* Replace Link for the Professional pricing tier */}
-              {plan.name === "Professional" ? (
-                <Link href={plan.href} passHref>
-                  <RainbowButton className="w-full">
-                    {plan.buttonText}
-                  </RainbowButton>
-                </Link>
-              ) : (
-                <Link
-                  href={plan.href}
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "group relative w-full gap-2 overflow-hidden text-lg font-semibold tracking-tighter",
-                    "transform-gpu ring-offset-current transition-all duration-300 ease-out hover:ring-2 hover:ring-primary hover:ring-offset-1 hover:bg-primary hover:text-primary-foreground",
-                    plan.isPopular ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
-                  )}
-                >
-                  {plan.buttonText}
-                </Link>
-              )}
-              <p className="mt-6 text-xs leading-5 text-muted-foreground">
-                {plan.description}
-              </p>
+              {/* Footer with increased top spacing */}
+              <div className="mt-auto flex flex-col gap-4">
+                {/* Button */}
+                {plan.name === "Professional" ? (
+                  <Link href={plan.href} passHref className="block">
+                    <RainbowButton className="w-full">
+                      Get Started
+                    </RainbowButton>
+                  </Link>
+                ) : (
+                  <Link
+                    href={plan.href}
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "w-full gap-2 text-base font-semibold tracking-tight transform-gpu ring-offset-current transition-all duration-300 ease-out hover:ring-2 hover:ring-primary hover:ring-offset-1 hover:bg-primary hover:text-primary-foreground",
+                      plan.isPopular
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-foreground"
+                    )}
+                  >
+                    {plan.buttonText.toLowerCase() === "contact sales"
+                      ? "Upgrade"
+                      : plan.buttonText}
+                  </Link>
+                )}
+
+                {/* Description Below Button with increased top spacing */}
+                <p className="text-xs text-muted-foreground text-center">
+                  {plan.description}
+                </p>
+              </div>
             </div>
           </motion.div>
         ))}
